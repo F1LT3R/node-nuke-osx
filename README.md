@@ -45,8 +45,7 @@ chmod +x ./node-nuke-osx.sh
 
 ## Flags
 
- - `./node-nuke-osx -l` - List of all files and directories to be removed'
- - `./node-nuke-osx -h` - show help list (you are reading it now)'
- - `./node-nuke-osx -D` - delete all node.js files and directories'
-
-
+ - `./node-nuke-osx -l` - List of all files and directories to be removed
+ - `./node-nuke-osx -h` - Show help list (you are reading it now)
+ - `./node-nuke-osx -v` - Verbose deletion messages
+ - `./node-nuke-osx -D` - [DANGER] Delete all node.js files and directories
