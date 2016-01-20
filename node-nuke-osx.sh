@@ -283,9 +283,9 @@ if [ $MODE == "NUKE" ]; then
     sudo rm $ARGS_FILE $file
   done
   
-  for file in "${NodeDirsSubFiles[@]}"; do
-    sudo rm $ARGS_FILE $file
-  done
+  #for file in "${NodeDirsSubFiles[@]}"; do
+  #  sudo rm $ARGS_FILE $file
+  #done
 
   for dir in "${NodeDirs[@]}"; do
     sudo rm $ARGS_DIR $dir
