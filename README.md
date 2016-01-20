@@ -32,13 +32,13 @@ Completely remove all traces of Node.JS from your Mac.
 ## Auto Run
 
 ```shell
-curl -ks https://github.com/F1LT3R/node-nuke-osx/blob/master/node-nuke-osx.sh | bash
+curl -ks https://raw.githubusercontent.com/F1LT3R/node-nuke-osx/master/node-nuke-osx.sh | bash
 ```
 
 ## Manual Run
 
 ```shell
-curl -ksO https://github.com/F1LT3R/node-nuke-osx/blob/master/node-nuke-osx.sh
+curl -ksO https://raw.githubusercontent.com/F1LT3R/node-nuke-osx/master/node-nuke-osx.sh
 chmod +x ./node-nuke-osx.sh
 ./node-nuke-osx.sh
 ```
