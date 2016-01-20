@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# https://github.com/F1LT3R/node-nuke-osx
+
 SPLASH=(
 "## NODE NUKE OSX                                                            "
 "               .           .   ________________    .        .               "
@@ -282,7 +284,8 @@ if [ $MODE == "NUKE" ]; then
   for file in "${NodeFiles[@]}"; do
     sudo rm $ARGS_FILE $file
   done
-  
+ 
+  # We will get rid of these files with an "rm -rf" 
   #for file in "${NodeDirsSubFiles[@]}"; do
   #  sudo rm $ARGS_FILE $file
   #done
