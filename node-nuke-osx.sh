@@ -104,7 +104,7 @@ while getopts "Dlh" arg; do
       echo 'Help: Node Nuke OSX'
       echo '  l - List each file/directory that would be deleted'
       echo '  h - Show help (you are reading help now)'
-      echo '  D - Delete each node.js file and directorie'
+      echo '  D - [DANGER] Delete each node.js file and directory'
       exit
       ;;
     esac
@@ -142,7 +142,7 @@ if [ $MODE = "DRYRUN" ]; then
 fi
 
 
-# This will need to be executed as an Admin (maybe just use sudo).
+# This will need to be executed as an Admin (maybe just use sudo)
 for bom in org.nodejs.node.pkg.bom org.nodejs.pkg.bom; do
 
   receipt=/var/db/receipts/${bom}
@@ -171,11 +171,11 @@ for dir in "${NodeDirectories[@]}"
 do
   # If the directory exists
   if [ -d "$dir" ]; then
-    # 
-    if [ $VERBOSE = true ]; then
+    # Verbose list marked for deletion
+    if [ $LIST = true ]; then
       find $dir -type d -o -type f -o -type l;
     else
-      echo "  $dir"
+      echo "$dir"
     fi
     if [ $MODE = "NUKE" ]; then
       sudo rm $ARGS_DIR $dir
@@ -192,7 +192,7 @@ fi
 for file in "${NodeFiles[@]}"
 do
   if [ -f "$file" ] || [ -L "$file" ]; then
-     echo "  $file"
+     echo "$file"
   fi
   if [ $MODE = "NUKE" ]; then
     sudo rm $ARGS_FILE $file
