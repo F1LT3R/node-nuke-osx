@@ -27,6 +27,8 @@ SPLASH=(
 "----------------------------------------------------------------------------"
 )
 
+BomPath="/var/db/receipts/"
+
 NodeDirectories=(
 
   # Default Installations
@@ -87,7 +89,7 @@ ARGS_DIR="-rf"
 ARGS_VERBOSE="v"
 
 
-while getopts "Dlh" arg; do
+while getopts "Dlhv" arg; do
   case $arg in
     D)
       # Delete each file/directory (overrides dry-run)
@@ -96,6 +98,9 @@ while getopts "Dlh" arg; do
     l)
       # List each file/directory that would be deleted
       LIST=true
+      ;;
+    v)
+     # Verbose deletion (output file/dir as it is being deleted)
       ARGS_FILE=$ARGS_FILE$ARGS_VERBOSE
       ARGS_DIR=$ARGS_DIR$ARGS_VERBOSE 
       ;;
@@ -104,6 +109,7 @@ while getopts "Dlh" arg; do
       echo 'Help: Node Nuke OSX'
       echo '  l - List each file/directory that would be deleted'
       echo '  h - Show help (you are reading help now)'
+      echo '  v - Verbose deletion messages'
       echo '  D - [DANGER] Delete each node.js file and directory'
       exit
       ;;
@@ -138,66 +144,122 @@ done
 
 if [ $MODE = "DRYRUN" ]; then
   echo
-  echo "BOM Packages marked for deletion: \n"
 fi
 
 
-# This will need to be executed as an Admin (maybe just use sudo)
+### Collect Bom Files
+
+BomFiles=()
+BomFileCount=0
+
 for bom in org.nodejs.node.pkg.bom org.nodejs.pkg.bom; do
+  receipt=$BomPath${bom}
 
-  receipt=/var/db/receipts/${bom}
-  [ -e ${receipt} ] && {
-    # Loop through all the files in the bom.
-    lsbom -f -l -s -pf ${receipt} \
-    | while read i; do
-      # Remove each file listed in the bom.
-      if [ $MODE = "DRYRUN" ]; then
-        echo /usr/local/${i}
-      else
-        sudo rm $ARGS_DIR /usr/local/${i}
+  # Check receipts
+  if [ -e ${receipt} ]; then
+    BomList=($(lsbom -f -l -s -pf ${receipt}))
+
+    for file in "${BomList[@]}"
+    do
+      BomFile="/usr/local/$file"
+
+      # Only add to list if exists
+      if [ -f "$BomFile" ] || [ -L "$BomFile" ]; then
+        BomFiles+=($BomFile)
+        ((BomFileCount+=1))
       fi
+
     done
-  }
-
-done
-
-
-if [ $MODE = "DRYRUN" ]; then
-  echo
-  echo "Directories marked for deletion: \n"
-fi
-
-for dir in "${NodeDirectories[@]}"
-do
-  # If the directory exists
-  if [ -d "$dir" ]; then
-    # Verbose list marked for deletion
-    if [ $LIST = true ]; then
-      find $dir -type d -o -type f -o -type l;
-    else
-      echo "$dir"
-    fi
-    if [ $MODE = "NUKE" ]; then
-      sudo rm $ARGS_DIR $dir
-    fi
   fi
 done
 
+echo "Found: $BomFileCount BOM files."
 
-if [ $MODE = "DRYRUN" ]; then
-  echo
-  echo "Files/Symbolic Links marked for deletion: \n"
-fi
+
+### Collect Other Node.js Files/Symbolic Links
+
+NodeFiles=()
+NodeFileCount=0
 
 for file in "${NodeFiles[@]}"
 do
   if [ -f "$file" ] || [ -L "$file" ]; then
-     echo "$file"
+    NodeFiles+=($file)
+    ((NodeFileCount+=1))
   fi
-  if [ $MODE = "NUKE" ]; then
-    sudo rm $ARGS_FILE $file
-  fi  
 done
+
+echo "Found: $NodeFileCount Node.js files/symbolic links."
+
+
+### Collect Node.js Directories
+
+NodeDirs=()
+NodeDirsCount=0
+
+NodeDirsSubFiles=()
+NodeDirsSubFileCount=0
+
+for dir in "${NodeDirectories[@]}"
+do
+  if [ -d "$dir" ]; then
+    NodeDirs+=($dir)
+    ((NodeDirsCount+=1))
+
+    SubFiles=($(find $dir -type f -o -type l;))
+    for subfile in "${SubFiles[@]}"
+    do
+      NodeDirsSubFiles+=($subfile)
+      ((NodeDirsSubFileCount+=1))
+    done  
+  fi
+done
+
+echo "Found: $NodeDirsCount Node.js directories,"
+echo "       with $NodeDirsSubFileCount files contained therein."
+
+
+
+
+    #if [ $MODE = "NUKE" ]; then
+      #sudo rm $ARGS_DIR $dir
+    #fi
+
+
+### List every file/directory/link marked for deletion
+
+if [ $LIST = true ]; then
+  echo
+  echo "Listing every file/directory/link marked for deletion..."
+
+  echo
+  echo "  BOM Files:" 
+  echo
+  for file in "${BomFiles[@]}"; do
+    echo "    $file"
+  done
+
+  echo
+  echo "  Node Files/Symlinks:" 
+  echo
+  for file in "${NodeFiles[@]}"; do
+    echo "    $file"
+  done
+
+  echo
+  echo "  Node Dirs:" 
+  echo
+  for dir in "${NodeDirs[@]}"; do
+    echo "    $dir"
+  done
+
+  echo
+  echo "  Files within Node Dirs:"
+  echo
+  for subfile in "${NodeDirsSubFiles[@]}"; do
+    echo "    $subfile"
+  done
+fi
 
 
 if [ $MODE == "DRYRUN" ]; then
@@ -205,10 +267,38 @@ if [ $MODE == "DRYRUN" ]; then
   echo 'This was a dry run.'
   echo 'No files or directories were deleted.'
   echo 'Read the help for execution instructions.'
+  echo
+fi
+
+
+if [ $MODE == "NUKE" ]; then
+  echo
+  echo "Nuking Node.js..."
+
+  for file in "${BomFiles[@]}"; do
+    sudo rm $ARGS_FILE $file
+  done
+
+  for file in "${NodeFiles[@]}"; do
+    sudo rm $ARGS_FILE $file
+  done
+  
+  for file in "${NodeDirsSubFiles[@]}"; do
+    sudo rm $ARGS_FILE $file
+  done
+
+  for dir in "${NodeDirs[@]}"; do
+    sudo rm $ARGS_DIR $dir
+  done
+
+  echo
+  echo "... Node.js has been nuked!"
+  echo
 fi
 
 
 exit 0
+
 
 # Credits:
 #   @nicerobot - https://gist.github.com/ddo/668630454ea0d74fdc21
