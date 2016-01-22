@@ -78,10 +78,10 @@ NodeFiles=(
 )
 
 
-for line in "${SPLASH[@]}"
-do
-  echo "$line"
-done
+#for line in "${SPLASH[@]}"
+#do
+  #echo "$line"
+#done
 
 
 MODE="DRYRUN"
@@ -221,13 +221,6 @@ echo "Found: $NodeDirsCount Node.js directories,"
 echo "       with $NodeDirsSubFileCount files contained therein."
 
 
-
-
-    #if [ $MODE = "NUKE" ]; then
-      #sudo rm $ARGS_DIR $dir
-    #fi
-
-
 ### List every file/directory/link marked for deletion
 
 if [ $LIST = true ]; then
@@ -240,6 +233,7 @@ if [ $LIST = true ]; then
   for file in "${BomFiles[@]}"; do
     echo "    $file"
   done
+  exit
 
   echo
   echo "  Node Files/Symlinks:" 
@@ -264,40 +258,112 @@ if [ $LIST = true ]; then
 fi
 
 
+# Set progress bar width & special characters
+progressBarWidth=20
+CLR="\033[K"
+UP="\033[1A"
+
+progressBar () {
+  # Calculate number of fill/empty slots in the bar
+  progress=$(echo "$progressBarWidth/$taskCount*$tasksDone" | bc -l)
+  fill=$(printf "%.0f\n" $progress)
+  if [ $fill -gt $progressBarWidth ]; then
+    fill=$progressBarWidth
+  fi
+  empty=$(($fill-$progressBarWidth))
+
+  # Percentage Calculation
+  percent=$(echo "100/$taskCount*$tasksDone" | bc -l)
+  percent=$(printf "%0.2f\n" $percent)
+  if [ $(echo "$percent>100" | bc) -gt 0 ]; then
+    percent="100.00"
+  fi
+
+  # Output to screen
+  echo "$UP$UP"
+  printf "\r["
+  printf "%${fill}s" '' | tr ' ' ▉
+  printf "%${empty}s" '' | tr ' ' ░
+  printf "] $percent%% \n$CLR$label"
+}
+
+
+nukeFile () {
+ if [ $MODE == "NUKE" ]; then
+    sudo rm $ARGS_FILE $file
+ fi
+ ((tasksDone +=1))
+}
+
+
+nukeDir () {
+ if [ $MODE == "NUKE" ]; then
+    sudo rm $ARGS_DIR $dir
+ fi
+ ((tasksDone +=1))
+}
+
+
+# Count Tasks
+taskCount=$(($BomFileCount+$NodeDirsCount+$NodeFileCount))
+tasksDone=0
+
+# End Nuking Message
+echo
+if [ $MODE == "NUKE" ]; then
+  echo "...Node.js has been nuked!"
+else
+  echo "...Node.js would been nuked by now! (DRY RUN)"
+fi
+echo
+
+
+
+
+# BEGIN NUKING!
+echo
+echo
+
+for file in "${BomFiles[@]}"; do
+  nukeFile $file
+  label=$(basename "$file")
+  progressBar $taskCount $tasksDone $label
+done
+
+for file in "${NodeFiles[@]}"; do
+  nukeFile $file
+  label=$(basename "$file")
+  progressBar $taskCount $tasksDone $label
+done
+
+for dir in "${NodeDirs[@]}"; do
+  nukeFile $dir
+  label=$(basename "$dir")
+  progressBar $taskCount $tasksDone $label
+done
+
+# Reset Progress bar
+label=" "
+progressBar $taskCount $tasksDone $label
+
+
+# End Nuking Message
+echo
+if [ $MODE == "NUKE" ]; then
+  echo "...Node.js has been nuked!"
+else
+  echo "...Node.js would been nuked by now! (DRY RUN)"
+fi
+echo
+
+
 if [ $MODE == "DRYRUN" ]; then
-  echo
   echo 'This was a dry run.'
   echo 'No files or directories were deleted.'
   echo 'Read the help for execution instructions.'
   echo
 fi
 
-
-if [ $MODE == "NUKE" ]; then
-  echo
-  echo "Nuking Node.js..."
-
-  for file in "${BomFiles[@]}"; do
-    sudo rm $ARGS_FILE $file
-  done
-
-  for file in "${NodeFiles[@]}"; do
-    sudo rm $ARGS_FILE $file
-  done
- 
-  # We will get rid of these files with an "rm -rf" 
-  #for file in "${NodeDirsSubFiles[@]}"; do
-  #  sudo rm $ARGS_FILE $file
-  #done
-
-  for dir in "${NodeDirs[@]}"; do
-    sudo rm $ARGS_DIR $dir
-  done
-
-  echo
-  echo "... Node.js has been nuked!"
-  echo
-fi
 
 
 exit 0
